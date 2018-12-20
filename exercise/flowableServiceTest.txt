@@ -1,0 +1,335 @@
+package com.fico.kycblk.service;
+
+import org.flowable.common.engine.api.FlowableException;
+import org.flowable.engine.*;
+import org.flowable.engine.history.HistoricActivityInstance;
+import org.flowable.engine.history.HistoricProcessInstance;
+import org.flowable.engine.repository.Deployment;
+import org.flowable.engine.repository.ProcessDefinition;
+import org.flowable.engine.runtime.ProcessInstance;
+import org.flowable.rest.service.api.repository.ProcessDefinitionResponse;
+import org.flowable.task.api.Task;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.stubbing.OngoingStubbing;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.http.HttpEntity;
+
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.when;
+
+
+
+//import org.flowable.cmmn.rest.service.api.repository.CaseDefinitionResponse;
+import org.flowable.common.rest.api.DataResponse;
+//import org.flowable.content.rest.service.api.content.ContentItemResponse;
+//import org.flowable.dmn.rest.service.api.repository.DmnDeploymentResponse;
+import org.flowable.rest.service.api.identity.GroupResponse;
+import org.flowable.rest.service.api.repository.FormDefinitionResponse;
+import org.flowable.rest.service.api.repository.ProcessDefinitionResponse;
+import org.junit.After;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.client.AutoConfigureWebClient;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.ClientHttpResponse;
+//import org.springframework.security.core.GrantedAuthority;
+//import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.web.client.DefaultResponseErrorHandler;
+import org.springframework.web.client.ResponseErrorHandler;
+import org.springframework.web.client.RestTemplate;
+
+import java.io.IOException;
+import java.util.Base64;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+@RunWith(SpringJUnit4ClassRunner.class)
+@PropertySource(value = "classpath:application.properties")
+@AutoConfigureWebClient(registerRestTemplate = true)
+public class FlowableDemoServiceTest {
+
+    @Autowired
+    private RestTemplate restTemplate;
+	@Mock
+	private ProcessEngine processEngine;
+	@Mock
+	private RepositoryService repositoryService;
+	@Mock
+	private Deployment deployment;
+	@Mock
+	private ProcessDefinition processDefinition;
+	@Mock
+	private RuntimeService runtimeService;
+	@Mock
+    private ProcessInstance processInstance;
+	@Mock
+    private TaskService taskService;
+	@Mock
+    private HistoryService historyService;
+	@Mock
+    private List<HistoricProcessInstance> historicProcessInstances;
+	@Mock
+    List<HistoricActivityInstance> historicActivityInstanceQuery;
+	private String customerId;
+	private List<Task> tasks;
+	private MockMvc mockMvc;
+	private String processDefKEy;
+	private String bpmnFilePath;
+	private  InputStream inputstream;
+	private String resource;
+	private String serverPort;
+    private Map<String, Object> variables = new HashMap<String, Object>();
+	@InjectMocks
+	private FlowableDemoService flowableDemoService;
+
+    @Before
+	public void setUp(){
+        mockMvc = MockMvcBuilders.standaloneSetup(flowableDemoService).build();
+        repositoryService = processEngine.getRepositoryService();
+//        serverPort="3000";
+//        bpmnFilePath="C:/Users/sagararora/Downloads/processes/kycblk.bpmn20.xml";
+//        resource = "kycblk.bpmn20.xml";
+//
+//        try {
+//            inputstream = new FileInputStream(bpmnFilePath);
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        }
+//        deployment = repositoryService.createDeployment().addInputStream(resource, inputstream)
+//                .deploy();
+        taskService = processEngine.getTaskService();
+        customerId="dummy";
+        historyService = processEngine.getHistoryService();
+//        historicActivityInstanceQuery = historyService.createHistoricActivityInstanceQuery().list();
+
+//        historicProcessInstances = historyService.createHistoricProcessInstanceQuery().involvedUser(customerId).unfinished().list();
+//        tasks = taskService.createTaskQuery().taskAssignee(customerId).list();
+//        runtimeService = processEngine.getRuntimeService();
+//        processDefinition = repositoryService.createProcessDefinitionQuery()
+//                .deploymentId(deployment.getId())
+//                .singleResult();
+//        variables.put("customerId", "dummy");
+//        processInstance = runtimeService.startProcessInstanceByKey(processDefinition.getId(), variables);
+	}
+
+	@Test
+    public void startProcess_whenGetRepositoryService_ProcessInstance() {
+        when(processEngine.getRepositoryService()).thenReturn(repositoryService);
+        RepositoryService testRepositoryService = processEngine.getRepositoryService();
+        assertEquals(repositoryService, testRepositoryService);
+    }
+	
+	@Test(expected = FlowableException.class)
+    public void startProcess_whenGetRepositoryService_ExpectFlowableException() {
+        when(processEngine.getRepositoryService()).thenThrow(new FlowableException("...") {
+        });
+        RepositoryService testRepositoryService = processEngine.getRepositoryService();
+    }
+//    protected static String base64Auhentication(String username, String password) {
+//        String auth = username + ":" + password;
+//        return "Basic " + Base64.getEncoder().encodeToString(auth.getBytes());
+//    }
+//    protected static HttpHeaders createHeaders(String username, String password) {
+//        HttpHeaders headers = new HttpHeaders();
+//        headers.set(HttpHeaders.AUTHORIZATION, base64Auhentication(username, password));
+//        return headers;
+//    }
+
+//    @Test
+//    public void startProcess_whenGetDeploymentId_Deployment(){
+//        String processDefinitionsUrl = "http://localhost:" + serverPort + "/process-api/repository/deployments";
+//        HttpEntity<String> request = new HttpEntity<String>(createHeaders("jbarrez", "password"));
+//        ResponseEntity<DataResponse<ProcessDefinitionResponse>> response = restTemplate
+//                .exchange(processDefinitionsUrl, HttpMethod.GET, request, new ParameterizedTypeReference<DataResponse<ProcessDefinitionResponse>>() {
+//
+//                });
+//        assertThat(response.getStatusCode())
+//                .as("Status code")
+//                .isEqualTo(HttpStatus.OK);
+//    }
+
+//    @Test
+//    public void startProcess_whenGetDeploymentId_Deployment(){
+//        when(processEngine.getRepositoryService()).thenReturn(repositoryService);
+//        when(repositoryService.createDeployment().addInputStream(resource, inputstream)
+//                .deploy()).thenReturn(deployment);
+//        Deployment testDeployment = repositoryService.createDeployment().addInputStream(resource, inputstream)
+//                .deploy();
+//        assertEquals(testDeployment.getClass(),deployment.getClass());
+//    }
+
+
+
+//    @Test(expected = FlowableException.class)
+//    public void startProcess_whenGetDeploymentId_ExpectFlowableException() {
+//        when(repositoryService.createDeployment().addInputStream(resource, inputstream).deploy()).thenThrow(new FlowableException("...") {
+//        });
+////        Deployment testDeployment = repositoryService.createDeployment().addInputStream(resource, inputstream).deploy();
+//    }
+
+//    @Test
+//    @org.flowable.engine.test.Deployment(resources={"processes/kycblk.bpmn20.xml"})
+//    public void startProcess_whenGetProcessDefinition_ProcessInstance() {
+//        when(repositoryService.createProcessDefinitionQuery()
+//                .deploymentId(deployment.getId())
+//                .singleResult()).thenReturn(processDefinition);
+//        ProcessDefinition testProcessDefinition = repositoryService.createProcessDefinitionQuery()
+//                .deploymentId(deployment.getId())
+//                .singleResult();
+//        assertEquals(processDefinition, testProcessDefinition);
+//    }
+//
+//    @Test(expected = FlowableException.class)
+//    @org.flowable.engine.test.Deployment(resources={"processes/kycblk.bpmn20.xml"})
+//    public void startProcess_whenGetProcessDefinition_ExpectFlowableException() {
+//        when(processEngine.getRepositoryService()).thenThrow(new FlowableException("...") {
+//        });
+//        ProcessDefinition testProcessDefinition = repositoryService.createProcessDefinitionQuery()
+//                .deploymentId(deployment.getId())
+//                .singleResult();
+//    }
+
+	@Test
+    @org.flowable.engine.test.Deployment(resources={"processes/kycblk.bpmn20.xml"})
+    public void startProcess_whenGetRuntimeService_ProcessInstance() {
+        when(processEngine.getRuntimeService()).thenReturn(runtimeService);
+        RuntimeService testRuntimeService = processEngine.getRuntimeService();
+        assertEquals(runtimeService, testRuntimeService);
+    }
+
+	@Test(expected = FlowableException.class)
+    @org.flowable.engine.test.Deployment(resources={"processes/kycblk.bpmn20.xml"})
+    public void startProcess_whenGetRuntimeService_ExpectFlowableException() {
+        when(processEngine.getRuntimeService()).thenThrow(new FlowableException("...") {
+        });
+        RuntimeService testRuntimeService = processEngine.getRuntimeService();
+    }
+
+	@Test
+    @org.flowable.engine.test.Deployment(resources={"processes/kycblk.bpmn20.xml"})
+    public void startProcess_whenGetProcessInstance_ProcessInstance() {
+        when(runtimeService.startProcessInstanceByKey("kycblk2", variables)).thenReturn(processInstance);
+        ProcessInstance testProcessInstance = runtimeService.startProcessInstanceByKey("kycblk2", variables);
+        assertEquals(processInstance, testProcessInstance);
+    }
+
+	@Test(expected = FlowableException.class)
+    @org.flowable.engine.test.Deployment(resources={"processes/kycblk.bpmn20.xml"})
+    public void startProcess_whenGetProcessInstance_ExpectFlowableException() {
+        when(runtimeService.startProcessInstanceByKey("kycblk2", variables)).thenThrow(new FlowableException("...") {
+        });
+        ProcessInstance testProcessInstance = runtimeService.startProcessInstanceByKey("kycblk2", variables);
+    }
+
+    @Test
+    @org.flowable.engine.test.Deployment(resources={"processes/kycblk.bpmn20.xml"})
+    public void startProcess_whenGetTaskService_ProcessInstance() {
+        when(processEngine.getTaskService()).thenReturn(taskService);
+        TaskService testTaskService = processEngine.getTaskService();
+        assertEquals(taskService, testTaskService);
+    }
+
+    @Test(expected = FlowableException.class)
+    @org.flowable.engine.test.Deployment(resources={"processes/kycblk.bpmn20.xml"})
+    public void startProcess_whenGetTaskService_ExpectFlowableException() {
+        when(processEngine.getTaskService()).thenThrow(new FlowableException("...") {
+        });
+        TaskService testTaskService = processEngine.getTaskService();
+    }
+
+//    @Test
+//    @org.flowable.engine.test.Deployment(resources={"processes/kycblk.bpmn20.xml"})
+//    public void startProcess_whenGetTasks_ProcessInstance() {
+//    http://localhost:3000/process-api/runtime/process-instances/fcd4904d-d050-11e8-83d0-b46bfc556cfd/variables/formResponse/data
+//        when(taskService.createTaskQuery().taskAssignee(customerId).list()).thenReturn(tasks);
+//        List<Task> testTasks = taskService.createTaskQuery().taskAssignee("dummy").list();
+//        assertEquals(tasks, testTasks);
+//    }
+//
+//    @Test(expected = FlowableException.class)
+//    @org.flowable.engine.test.Deployment(resources={"processes/kycblk.bpmn20.xml"})
+//    public void startProcess_whenGetTasks_ExpectFlowableException() {
+//        when(taskService.createTaskQuery().taskAssignee(customerId).list()).thenThrow(new FlowableException("...") {
+//        });
+//        List<Task> testTasks = taskService.createTaskQuery().taskAssignee(customerId).list();
+//    }
+
+
+    @Test
+    @org.flowable.engine.test.Deployment(resources={"processes/kycblk.bpmn20.xml"})
+    public void completeProcess_whenGetHistoryService_String() {
+        when(processEngine.getHistoryService()).thenReturn(historyService);
+        HistoryService testHistoryService = processEngine.getHistoryService();
+        assertEquals(historyService, testHistoryService);
+    }
+
+    @Test(expected = FlowableException.class)
+    @org.flowable.engine.test.Deployment(resources={"processes/kycblk.bpmn20.xml"})
+    public void completeProcess_whenGetHistoryService_ExpectFlowableException() {
+        when(processEngine.getHistoryService()).thenThrow(new FlowableException("...") {
+        });
+        HistoryService testHistoryService = processEngine.getHistoryService();
+    }
+
+//    @Test
+//    @org.flowable.engine.test.Deployment(resources={"processes/kycblk.bpmn20.xml"})
+//    public void completeProcess_whenGetHistoricProcessInstanceQuery_String() {
+//        when(historyService.createHistoricProcessInstanceQuery().involvedUser(customerId).unfinished().list()).thenReturn(historicProcessInstances);
+//        List<HistoricProcessInstance> testHistoricProcessInstanceQuery = historyService.createHistoricProcessInstanceQuery().involvedUser("dummy").unfinished().list();
+//        assertEquals(historicProcessInstances, testHistoricProcessInstanceQuery);
+//    }
+//
+//    @Test(expected = FlowableException.class)
+//    @org.flowable.engine.test.Deployment(resources={"processes/kycblk.bpmn20.xml"})
+//    public void completeProcess_whenGetHistoricProcessInstanceQuery_ExpectFlowableException() {
+//        when(historyService.createHistoricProcessInstanceQuery().involvedUser("dummy").unfinished().list()).thenThrow(new FlowableException("...") {
+//        });
+//        List<HistoricProcessInstance> testHistoricProcessInstanceQuery = historyService.createHistoricProcessInstanceQuery().involvedUser("dummy").unfinished().list();
+//    }
+
+
+//    @Test
+//    @org.flowable.engine.test.Deployment(resources={"processes/kycblk.bpmn20.xml"})
+//    public void completeProcess_whenGetHistoricProcessInstanceQuery_String() {
+//        when(historyService.createHistoricActivityInstanceQuery().list()).thenReturn(historicActivityInstanceQuery);
+//        List<HistoricActivityInstance> testHistoricActivityInstanceQuery = historyService.createHistoricActivityInstanceQuery().list();
+//        assertEquals(historicActivityInstanceQuery, testHistoricActivityInstanceQuery);
+//    }
+//
+//    @Test(expected = FlowableException.class)
+//    @org.flowable.engine.test.Deployment(resources={"processes/kycblk.bpmn20.xml"})
+//    public void completeProcess_whenGetHistoricProcessInstanceQuery_ExpectFlowableException() {
+//        when(historyService.createHistoricActivityInstanceQuery().list()).thenThrow(new FlowableException("...") {
+//        });
+//        List<HistoricActivityInstance> testHistoricActivityInstanceQuery = historyService.createHistoricActivityInstanceQuery().list();
+//    }
+
+
+}
+77782bd4-020f-11e9-a69c-b46bfc556cfd
